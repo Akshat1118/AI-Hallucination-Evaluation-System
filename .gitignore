@@ -1,0 +1,51 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# Environment files
+.env
+!.env.example
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# ChromaDB data
+knowledge_base/vectorstore/chroma_db/
+
+# HuggingFace cache
+knowledge_base/datasets/
+
+# Node modules
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pytest cache
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Logs
+*.log
