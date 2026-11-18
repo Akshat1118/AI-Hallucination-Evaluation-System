@@ -17,14 +17,14 @@ export default function EvaluationForm({ onResult }) {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const pollForResult = async (evalId, maxAttempts = 15) => {
+  const pollForResult = async (evalId, maxAttempts = 20) => {
     for (let i = 0; i < maxAttempts; i++) {
       await new Promise(r => setTimeout(r, 2000))
       const res = await axios.get(`${API_BASE}/evaluate/${evalId}`)
       if (res.data.status === 'completed') return res.data
       if (res.data.status === 'failed') throw new Error('Evaluation failed on server.')
     }
-    throw new Error('Evaluation timed out.')
+    throw new Error('Evaluation timed out. Please try again.')
   }
 
   const handleSubmit = async (e) => {
@@ -32,7 +32,6 @@ export default function EvaluationForm({ onResult }) {
     setError(null)
     setLoading(true)
     try {
-      // Submit evaluation
       const submitRes = await axios.post(`${API_BASE}/evaluate`, {
         question: form.question,
         ai_response: form.ai_response,
@@ -40,31 +39,64 @@ export default function EvaluationForm({ onResult }) {
         source_document: form.source_document || undefined,
       })
       const evalId = submitRes.data.evaluation_id
-
-      // Poll for result
       const result = await pollForResult(evalId)
       onResult(evalId, result)
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Unknown error')
+      setError(err.response?.data?.detail || err.message || 'Unknown error occurred.')
     } finally {
       setLoading(false)
     }
   }
 
+  const loadExample = (q, a, ref = '') => {
+    setForm({
+      question: q,
+      ai_response: a,
+      reference_answer: ref,
+      source_document: '',
+    })
+  }
+
   return (
-    <div className="bg-slate-800 rounded-2xl border border-slate-700 p-8">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-white">Evaluation Input</h2>
-        <p className="text-slate-400 text-sm mt-1">
-          Submit an AI-generated response for multi-dimensional hallucination evaluation.
-        </p>
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 pb-4 border-b border-slate-100">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Run Evaluation</h2>
+          <p className="text-slate-500 text-sm mt-0.5">
+            Submit a Question and AI Response for multi-agent hallucination scoring.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 mt-3 sm:mt-0">
+          <span className="text-xs text-slate-400 font-medium">Quick Presets:</span>
+          <button
+            type="button"
+            onClick={() => loadExample(
+              "What is the boiling point of water at sea level?",
+              "Water boils at 100 degrees Celsius (212 degrees Fahrenheit) at standard atmospheric pressure (1 atm).",
+              "100°C (212°F) at 1 atm"
+            )}
+            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-md transition font-medium"
+          >
+            Accurate Sample
+          </button>
+          <button
+            type="button"
+            onClick={() => loadExample(
+              "Who is the current Prime Minister of India?",
+              "Rahul Gandhi is the current Prime Minister of India.",
+              "Narendra Modi is the Prime Minister of India."
+            )}
+            className="text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1.5 rounded-md transition font-medium"
+          >
+            Hallucinated Sample
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Question */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
-            Question <span className="text-red-400">*</span>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            Question / Prompt <span className="text-rose-500">*</span>
           </label>
           <textarea
             name="question"
@@ -72,78 +104,77 @@ export default function EvaluationForm({ onResult }) {
             onChange={handleChange}
             required
             rows={2}
-            placeholder="Enter the question that was asked to the AI..."
-            className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+            placeholder="e.g. Who walked on the moon during Apollo 11?"
+            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
           />
         </div>
 
-        {/* AI Response */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
-            AI Response <span className="text-red-400">*</span>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            AI-Generated Response to Evaluate <span className="text-rose-500">*</span>
           </label>
           <textarea
             name="ai_response"
             value={form.ai_response}
             onChange={handleChange}
             required
-            rows={5}
-            placeholder="Paste the AI-generated response to evaluate..."
-            className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+            rows={4}
+            placeholder="Paste the output generated by the LLM that you want to check for hallucinations..."
+            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
           />
         </div>
 
-        {/* Reference Answer (optional) */}
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
-            Reference Answer <span className="text-slate-500 font-normal">(optional)</span>
-          </label>
-          <textarea
-            name="reference_answer"
-            value={form.reference_answer}
-            onChange={handleChange}
-            rows={2}
-            placeholder="Provide a ground-truth reference answer for comparison..."
-            className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-          />
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              Reference Ground Truth <span className="text-slate-400 font-normal text-xs">(optional)</span>
+            </label>
+            <textarea
+              name="reference_answer"
+              value={form.reference_answer}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Ground truth answer to compare against..."
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition text-sm"
+            />
+          </div>
 
-        {/* Source Document (optional) */}
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
-            Source Document / Reference Material <span className="text-slate-500 font-normal">(optional)</span>
-          </label>
-          <textarea
-            name="source_document"
-            value={form.source_document}
-            onChange={handleChange}
-            rows={3}
-            placeholder="Paste source material or reference document for grounding evaluation..."
-            className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-          />
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              Source Document / Context <span className="text-slate-400 font-normal text-xs">(optional)</span>
+            </label>
+            <textarea
+              name="source_document"
+              value={form.source_document}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Source context material to ground evaluation..."
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition text-sm"
+            />
+          </div>
         </div>
 
         {error && (
-          <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-sm">
-            ⚠️ {error}
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm flex items-start gap-2">
+            <span className="font-bold">Error:</span> {error}
           </div>
         )}
 
         <button
           type="submit"
           disabled={loading || !form.question.trim() || !form.ai_response.trim()}
-          className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 px-6 rounded-xl transition duration-200 shadow-sm flex items-center justify-center gap-2 text-base"
         >
           {loading ? (
             <>
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              Evaluating...
+              <span>Agents Evaluating (Relevance, Accuracy, Hallucination, Completeness)...</span>
             </>
           ) : (
-            '🔍 Evaluate Response'
+            '🔍 Evaluate Response with Judge Agents'
           )}
         </button>
       </form>

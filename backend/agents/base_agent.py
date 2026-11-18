@@ -30,14 +30,32 @@ class BaseJudgeAgent(ABC):
         )
 
     async def _call_llm(self, prompt: str) -> str:
-        """Call Gemini API and return the response text."""
-        interaction = self.client.interactions.create(
-            model=self.model,
-            system_instruction=self._build_system_prompt(),
-            input=prompt,
-            store=False,
-        )
-        return interaction.output_text or ""
+        """Call Gemini API using generate_content with supported models."""
+        models_to_try = [
+            "gemini-2.5-flash",
+            "gemini-2.5-flash-lite",
+            "gemini-3.5-flash",
+            "gemini-3.5-flash-lite",
+        ]
+        last_error = None
+        for model_name in models_to_try:
+            try:
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config={
+                        "system_instruction": self._build_system_prompt(),
+                        "temperature": 0.0,
+                    },
+                )
+                if response and response.text:
+                    return response.text
+            except Exception as e:
+                last_error = e
+                continue
+        if last_error:
+            raise last_error
+        return ""
 
     def _parse_json_response(self, text: str) -> dict:
         """Extract and parse JSON from LLM response."""

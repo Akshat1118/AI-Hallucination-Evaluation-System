@@ -2,6 +2,16 @@
 FastAPI main application entry point.
 Milestone 1 — AI Hallucination Evaluation System
 """
+import sys
+from pathlib import Path
+
+# Ensure project root is in sys.path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+BACKEND_ROOT = Path(__file__).resolve().parent.parent
+for p in [str(PROJECT_ROOT), str(BACKEND_ROOT)]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager

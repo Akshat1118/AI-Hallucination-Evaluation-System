@@ -31,7 +31,15 @@ class Settings(BaseSettings):
     app_title: str = "AI Hallucination Evaluation System"
     app_version: str = "1.0.0"
 
-    model_config = {"env_file": "../.env", "env_file_encoding": "utf-8", "extra": "ignore"}
+    model_config = {
+        "env_file": [
+            str(Path(__file__).resolve().parent.parent / ".env"),
+            str(Path(__file__).resolve().parent.parent.parent / ".env"),
+            ".env",
+        ],
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
 
 
 settings = Settings()
