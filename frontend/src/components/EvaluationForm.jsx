@@ -17,7 +17,7 @@ export default function EvaluationForm({ onResult }) {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const pollForResult = async (evalId, maxAttempts = 20) => {
+  const pollForResult = async (evalId, maxAttempts = 40) => {
     for (let i = 0; i < maxAttempts; i++) {
       await new Promise(r => setTimeout(r, 2000))
       const res = await axios.get(`${API_BASE}/evaluate/${evalId}`)
